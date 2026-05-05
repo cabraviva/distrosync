@@ -1,6 +1,7 @@
 use clap::{Parser, Subcommand};
 
 mod commands;
+mod aio;
 
 #[derive(Parser)]
 struct Cli {
