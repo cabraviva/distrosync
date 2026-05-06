@@ -1,6 +1,6 @@
-use std::{fs::File, io::Write, process::Command};
+use std::{fs::File, io::{Read, Write}, process::Command};
 use colored::Colorize;
-use zip::{ZipWriter, write::FileOptions};
+use zip::{ZipArchive, ZipWriter, write::FileOptions};
 
 pub fn flatpak_installed() -> bool {
     let out = Command::new("flatpak").arg("--version").output();
@@ -77,5 +77,13 @@ flatpak list --app --columns=application,branch,origin,installation \
         zip.write_all(b"\n").map_err(|e| e.to_string())?;
     }
 
+    println!("{}{}{} Exported flatpak", "[".blue(), "✓".cyan(), "]".blue());
     Ok(())
+}
+
+
+pub fn import_from_zip(zip: &mut ZipArchive<File>) -> Result<(), String> {
+    
+    println!("{}{}{} Imported flatpak", "[".blue(), "✓".cyan(), "]".blue());
+    Ok(()) // TODO:
 }
