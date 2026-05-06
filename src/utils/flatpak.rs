@@ -25,6 +25,14 @@ flatpak remotes --user --columns=name,url \
 | awk '{printf "flatpak remote-add --if-not-exists --user %s %s\n", $1, $2}'
 "#;
 
+    const FLATPAK_PACKAGES_EXPORT_SCRIPT: &str = r#"
+flatpak list --app --columns=application,branch,origin,installation \
+| awk '{
+  scope = ($4 == "user") ? "--user" : "--system"
+  printf "flatpak install -y %s %s %s %s\n", scope, $3, $1, $2
+}'
+"#;
+
     if !flatpak_installed() {
         println!("{}", "Warning: Skipping flatpak export because it does not seem to be installed".yellow());
         return Ok(());
@@ -52,6 +60,22 @@ flatpak remotes --user --columns=name,url \
 
 
     // 2. Export packages
+    let out_pkgs = Command::new("sh").arg("-c").arg(FLATPAK_PACKAGES_EXPORT_SCRIPT).output().expect("sh is not executable on your system");
+    if !out_pkgs.status.success()  {
+        return Err("Flatpak packages export script was not successful".into());
+    }
+    let pkgs_str = String::from_utf8_lossy(&out_pkgs.stdout);
+
+    // Add to zip
+    zip.start_file("flatpak/packages", options).map_err(|e| e.to_string())?;
+
+    for line in pkgs_str.lines() {
+        let trimmed_cmd = line.trim();
+        if trimmed_cmd.is_empty() { continue };
+        
+        zip.write_all(line.as_bytes()).map_err(|e| e.to_string())?;
+        zip.write_all(b"\n").map_err(|e| e.to_string())?;
+    }
 
     Ok(())
 }
